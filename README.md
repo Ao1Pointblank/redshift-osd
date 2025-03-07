@@ -28,3 +28,15 @@
  - Increase Brightness: ``./redshift-osd.sh brightness up``
  - Decrease Temperature: ``./redshift-osd.sh temperature down``
  - Reset Temperature to Default: ``./gummy-osd.sh temperature reset``
+
+ Suggestions: 
+ - add to ``autorandr`` postswitch script:  
+create a file ``~/.config/autorandr/postswitch`` and ``chmod +x`` it, then add this to it:
+```bash
+#!/bin/bash
+BRIGHTNESS_FILE="/tmp/.${UID}_${DISPLAY}.redshift-osd-bright"
+TEMPERATURE_FILE="/tmp/.${UID}_${DISPLAY}.redshift-osd-temp"
+sleep 2
+redshift -b "$(echo "scale=2; "$(cat $BRIGHTNESS_FILE)" / 100" | bc)" -O "$(cat $TEMPERATURE_FILE)" -P
+```
+this will allow your cached brightness/temperature settings to carry over to a new autorandr profile when switching monitors.
