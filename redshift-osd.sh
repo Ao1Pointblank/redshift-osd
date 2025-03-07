@@ -76,53 +76,41 @@ VALUE=$(cat "$VALUE_FILE")
 
 # Adjust the value based on the direction
 case "$2" in
-    "up")
-        VALUE=$((VALUE + STEP))
-        ;;
-    "down")
-        VALUE=$((VALUE - STEP))
-        ;;
-    "reset")
-        VALUE=$DEFAULT
-        ;;
-    *)
-        echo "Unknown direction: $2"
-        exit 1
-        ;;
+    "up") VALUE=$((VALUE + STEP)) ;;
+    "down") VALUE=$((VALUE - STEP)) ;;
+    "reset") VALUE=$DEFAULT ;;
+    *) echo "Unknown direction: $2"; exit 1 ;;
 esac
 
 # Ensure VALUE is within valid ranges
 if [ "$1" == "brightness" ]; then
     if [ "$VALUE" -gt 100 ]; then
         VALUE=100
-        echo "no change"
+        echo "max value: no change"
     elif [ "$VALUE" -lt 10 ]; then
         VALUE=10
-        echo "no change"
+        echo "min value: no change"
     else
-        echo "value: $VALUE"
+        echo "new value: $VALUE"
+        # Scale VALUE from 10-100 to 0-100 for OSD
+        PERCENTAGE=$(( (VALUE - 10) * 100 / 90 )) ##
     fi
 elif [ "$1" == "temperature" ]; then
     if [ "$VALUE" -gt 6500 ]; then
         VALUE=6500
-        echo "no change"
+        echo "max value: no change"
     elif [ "$VALUE" -lt 1000 ]; then
         VALUE=1000
-        echo "no change"
+        echo "min value: no change"
     else
-        echo "value: $VALUE"
+        echo "new value: $VALUE"
+        # Scale VALUE from 1000-6500 to 0-100 for OSD
+        PERCENTAGE=$(( ( (VALUE - 1000) * 100 ) / 5500 ))
     fi
 fi
 
 # Write the updated value back to the file
 echo "$VALUE" > "$VALUE_FILE"
-
-# Convert temperature value to percentage for OSD
-if [ "$1" == "temperature" ]; then
-    PERCENTAGE=$(( ( (VALUE - 1000) * 100 ) / (6500 - 1000) ))
-else
-    PERCENTAGE=$VALUE
-fi
 
 # Update the OSD display
 update_osd "$ICON" "$PERCENTAGE"
@@ -130,10 +118,9 @@ update_osd "$ICON" "$PERCENTAGE"
 #reset gamma ramps but restore previous opposing settings
 case "$1" in
     "brightness")
-        redshift -b "$(echo "scale=2; "$VALUE" / 100" | bc)" -O "$(cat $TEMPERATURE_FILE)" -P
+        redshift -b "$(echo "scale=2; "$VALUE" / 100" | bc)" -O "$(cat $TEMPERATURE_FILE)" -P > /dev/null
        ;;
     "temperature")
-        redshift -b "$(echo "scale=2; $(cat $BRIGHTNESS_FILE) / 100" | bc)" -O "$VALUE" -P
+        redshift -b "$(echo "scale=2; $(cat $BRIGHTNESS_FILE) / 100" | bc)" -O "$VALUE" -P > /dev/null
         ;;
 esac
-
